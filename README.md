@@ -1,2 +1,2 @@
-# icm-coding-workflow
+# ICM Coding Workflow
 An ICM style software development template.
