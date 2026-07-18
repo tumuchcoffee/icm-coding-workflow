@@ -8,11 +8,11 @@ Translate the requirements from [Stage 01](../01-requirements/output/) into a co
 
 ## Inputs
 
-| Layer | Source | What to Load |
-|---|---|---|
-| **Layer 3 (Reference)** | `docs/coding-standards.md` | Language and platform conventions |
-| **Layer 3 (Reference)** | `docs/system-architecture.md` | System-level architecture decisions, tech stack, component boundaries |
-| **Layer 4 (Working)** | `../01-requirements/output/*.md` | Feature requirements, user stories, acceptance criteria |
+| Layer                         | Source                                                      | What to Load                                                          |
+| ----------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Layer 3 (Reference)** | `docs/coding-standards.md`                                | Language and platform conventions                                     |
+| **Layer 3 (Reference)** | `docs/system-architecture.md`                             | System-level architecture decisions, tech stack, component boundaries |
+| **Layer 4 (Working)**   | `../01-requirements/output/feature-requirements-final.md` | Feature requirements, user stories, acceptance criteria               |
 
 ---
 
@@ -32,13 +32,13 @@ Use the following principles to guide every decision. When you make a choice, ci
 
 #### SOLID Principles (Robert C. Martin)
 
-| Principle | Application in This Codebase |
-|---|---|
-| **S** — Single Responsibility | Each class, endpoint, and component has exactly one reason to change. Map every new class to a single requirement. |
-| **O** — Open/Closed | Extend behavior through interfaces and dependency injection — never by modifying existing, tested classes. Use the MediatR pipeline and Angular providers to inject new behavior. |
-| **L** — Liskov Substitution | Derived types must be substitutable for their base types. If a subclass can't honor the base contract, rethink the hierarchy. |
-| **I** — Interface Segregation | Keep interfaces small and focused. No class should depend on methods it doesn't use. Prefer role interfaces over fat ones. |
-| **D** — Dependency Inversion | Depend on abstractions, not concretions. High-level policy (Application layer) never depends on low-level details (Infrastructure). This is enforced by the solution structure — `Application` never references `Infrastructure`. |
+| Principle                            | Application in This Codebase                                                                                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S** — Single Responsibility | Each class, endpoint, and component has exactly one reason to change. Map every new class to a single requirement.                                                                                                                    |
+| **O** — Open/Closed           | Extend behavior through interfaces and dependency injection — never by modifying existing, tested classes. Use the MediatR pipeline and Angular providers to inject new behavior.                                                    |
+| **L** — Liskov Substitution   | Derived types must be substitutable for their base types. If a subclass can't honor the base contract, rethink the hierarchy.                                                                                                         |
+| **I** — Interface Segregation | Keep interfaces small and focused. No class should depend on methods it doesn't use. Prefer role interfaces over fat ones.                                                                                                            |
+| **D** — Dependency Inversion  | Depend on abstractions, not concretions. High-level policy (Application layer) never depends on low-level details (Infrastructure). This is enforced by the solution structure —`Application` never references `Infrastructure`. |
 
 #### Clean Architecture / Hexagonal Architecture
 
@@ -57,14 +57,14 @@ Rules:
 
 Apply these patterns when the feature involves complex business logic:
 
-| Pattern | When to Use |
-|---|---|
-| **Entity** | An object with a distinct identity that changes over time (e.g., `Tenant`, `User`, `Order`) |
-| **Value Object** | An immutable object defined by its attributes, not identity (e.g., `EmailAddress`, `Money`, `Address`) |
-| **Aggregate** | A cluster of entities and value objects treated as a single unit. One entity is the aggregate root — all external references go through it. |
-| **Domain Event** | Something meaningful that happened in the domain. Use for side effects and cross-boundary communication. |
-| **Repository** | A collection-like interface for aggregate persistence. Hide I/O details behind it. |
-| **Domain Service** | Stateless operations that don't naturally belong to an entity or value object. |
+| Pattern                  | When to Use                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entity**         | An object with a distinct identity that changes over time (e.g.,`Tenant`, `User`, `Order`)                                             |
+| **Value Object**   | An immutable object defined by its attributes, not identity (e.g.,`EmailAddress`, `Money`, `Address`)                                  |
+| **Aggregate**      | A cluster of entities and value objects treated as a single unit. One entity is the aggregate root — all external references go through it. |
+| **Domain Event**   | Something meaningful that happened in the domain. Use for side effects and cross-boundary communication.                                     |
+| **Repository**     | A collection-like interface for aggregate persistence. Hide I/O details behind it.                                                           |
+| **Domain Service** | Stateless operations that don't naturally belong to an entity or value object.                                                               |
 
 **Guidance**: Don't force DDD on CRUD features. If the feature is simple data entry with no business rules, a transaction script (command → Dapper query) is appropriate. Reserve DDD for features with significant business complexity.
 
@@ -76,13 +76,13 @@ Apply these patterns when the feature involves complex business logic:
 
 #### Separation of Concerns
 
-| Layer | Concern | Must NOT Contain |
-|---|---|---|
-| **Domain** | Business rules, entities, value objects | Database access, HTTP, JSON serialization, DI references |
-| **Application** | Use case orchestration, DTOs, validation | SQL queries, HTTP context, framework-specific code |
-| **Infrastructure** | Database access, external APIs, file I/O, messaging | Business rules, domain logic |
-| **Api** | HTTP endpoint definitions, middleware, auth configuration | Business rules, database access |
-| **Angular** | UI rendering, user interaction | Direct API calls outside services, business rules |
+| Layer                    | Concern                                                   | Must NOT Contain                                         |
+| ------------------------ | --------------------------------------------------------- | -------------------------------------------------------- |
+| **Domain**         | Business rules, entities, value objects                   | Database access, HTTP, JSON serialization, DI references |
+| **Application**    | Use case orchestration, DTOs, validation                  | SQL queries, HTTP context, framework-specific code       |
+| **Infrastructure** | Database access, external APIs, file I/O, messaging       | Business rules, domain logic                             |
+| **Api**            | HTTP endpoint definitions, middleware, auth configuration | Business rules, database access                          |
+| **Angular**        | UI rendering, user interaction                            | Direct API calls outside services, business rules        |
 
 #### API Design Principles
 
@@ -102,13 +102,13 @@ Apply these patterns when the feature involves complex business logic:
 
 #### Resilience Patterns
 
-| Pattern | Tool | When to Apply |
-|---|---|---|
-| **Retry with exponential backoff** | Polly | Transient failures (network blips, SQL deadlocks, throttling) |
-| **Circuit Breaker** | Polly | When a downstream service is failing and retries would make it worse |
-| **Timeout** | `HttpClient.Timeout` / Polly | Every external call — never wait indefinitely |
-| **Bulkhead** | Separate thread pools / connection pools | Isolate resource-intensive operations from the main request pipeline |
-| **Cache-Aside** | Redis + `IDistributedCache` | Frequently read, infrequently changed data |
+| Pattern                                  | Tool                                     | When to Apply                                                        |
+| ---------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
+| **Retry with exponential backoff** | Polly                                    | Transient failures (network blips, SQL deadlocks, throttling)        |
+| **Circuit Breaker**                | Polly                                    | When a downstream service is failing and retries would make it worse |
+| **Timeout**                        | `HttpClient.Timeout` / Polly           | Every external call — never wait indefinitely                       |
+| **Bulkhead**                       | Separate thread pools / connection pools | Isolate resource-intensive operations from the main request pipeline |
+| **Cache-Aside**                    | Redis +`IDistributedCache`             | Frequently read, infrequently changed data                           |
 
 #### Security Principles
 
@@ -180,13 +180,13 @@ A Mermaid component diagram showing how the new feature's pieces fit into the ex
 
 ## Outputs
 
-| File | Purpose |
-|---|---|
-| `output/architecture-decision-record.md` | ADRs for significant architectural choices |
-| `output/component-design.md` | Detailed design of each component (frontend, backend, data) |
-| `output/data-model.md` | Database schema changes, index strategy, migration plan |
-| `output/sequence-diagrams.md` | Mermaid sequence diagrams for key flows |
-| `output/component-interaction.md` | Mermaid diagram showing integration with the existing system |
+| File                                       | Purpose                                                      |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `output/architecture-decision-record.md` | ADRs for significant architectural choices                   |
+| `output/component-design.md`             | Detailed design of each component (frontend, backend, data)  |
+| `output/data-model.md`                   | Database schema changes, index strategy, migration plan      |
+| `output/sequence-diagrams.md`            | Mermaid sequence diagrams for key flows                      |
+| `output/component-interaction.md`        | Mermaid diagram showing integration with the existing system |
 
 ---
 
