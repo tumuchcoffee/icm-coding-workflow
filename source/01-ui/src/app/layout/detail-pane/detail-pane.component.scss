@@ -1,0 +1,8 @@
+.detail-pane {
+  width: 150px;
+  flex-shrink: 0;
+  padding: 1rem;
+  background-color: var(--surface-ground, #f8f9fa);
+  border-left: 1px solid var(--surface-border, #dee2e6);
+  overflow-y: auto;
+}

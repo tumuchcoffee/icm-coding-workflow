@@ -1,0 +1,12 @@
+<app-header (menuToggle)="toggleMenu()" />
+
+<app-menu [isOpen]="menuOpen()" (closed)="closeMenu()" />
+
+<div class="content-area">
+  <router-outlet />
+  <app-detail-pane [isOpen]="detailPaneOpen()">
+    <!-- Feature content projected here in future versions -->
+  </app-detail-pane>
+</div>
+
+<app-footer />

@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "ICM Admin API v0.1.2",
+    "description": "Postman collection for verifying the FAST Dashboard .NET API health check and future endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 0,
+      "minor": 1,
+      "patch": 2
+    }
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string",
+      "description": "Base URL of the .NET API. Default is localhost:5001 for development."
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints for API liveness verification.",
+      "item": [
+        {
+          "name": "Get Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required fields\", () => {",
+                  "    const json = pm.response.json();",
+                  "",
+                  "    pm.expect(json.status).to.be.a('string').and.to.eql('Healthy');",
+                  "    pm.expect(json.timestamp).to.be.a('string').and.to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}/);",
+                  "    pm.expect(json.version).to.be.a('string').and.to.eql('0.1.2');",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is acceptable (< 500ms)\", () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Returns the API health status, current UTC timestamp, and version. Used to verify the API is running and responsive."
+          },
+          "response": [
+            {
+              "name": "Healthy Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Healthy\",\n  \"timestamp\": \"2026-07-18T14:30:00.0000000Z\",\n  \"version\": \"0.1.2\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Future",
+      "description": "Placeholder folder for future API endpoints (Tenants, Users, Billing, etc.).",
+      "item": []
+    }
+  ]
+}

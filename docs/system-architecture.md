@@ -89,7 +89,7 @@ graph TD
 | Framework | Angular 19+ (standalone components) |
 | Language | TypeScript 5.x, strict mode |
 | State Management | NgRx SignalStore |
-| UI Component Library | Tailwind CSS + Angular CDK |
+| UI Component Library | PrimeNG + Angular CDK |
 | HTTP Client | Angular `HttpClient` with interceptors |
 | Build | Vite (via Angular CLI / esbuild) |
 | Testing | Jest (unit), Playwright (E2E) |
@@ -123,6 +123,7 @@ src/
 ### 3.3 Key Patterns
 
 - **Standalone Components**: No `NgModule`. Every component, pipe, and directive is standalone.
+- **Separate Template & Style Files**: Every component uses `templateUrl` and `styleUrls` (pointing to `.component.html` and `.component.scss` files) rather than inline `template` and `styles`. This keeps TypeScript logic, HTML structure, and SCSS styling in dedicated files for clarity and maintainability.
 - **Signals for State**: `signal()`, `computed()`, and `effect()` for local state; NgRx SignalStore for feature-level state.
 - **Lazy Loading**: Every feature is loaded lazily via the Angular Router.
 - **HTTP Interceptors**: Centralized auth token injection, tenant header injection, error normalization, and telemetry correlation.

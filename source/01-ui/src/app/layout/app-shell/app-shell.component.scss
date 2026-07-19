@@ -1,0 +1,20 @@
+:host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+.content-area {
+  display: flex;
+  flex: 1;
+  overflow: auto;
+
+  router-outlet {
+    display: none;
+  }
+
+  > :nth-child(2) {
+    flex: 1;
+    padding: 1rem;
+  }
+}

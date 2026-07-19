@@ -1,0 +1,12 @@
+<p-sidebar
+  [(visible)]="isOpen"
+  position="left"
+  styleClass="app-sidebar"
+  (onHide)="closed.emit()">
+  <ng-template pTemplate="content">
+    <nav class="menu-nav">
+      <!-- Navigation links added in future versions -->
+      <h3 class="menu-link">Dashboard</h3>
+    </nav>
+  </ng-template>
+</p-sidebar>
