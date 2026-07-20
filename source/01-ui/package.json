@@ -1,7 +1,7 @@
 {
   "name": "icm-admin",
   "version": "0.1.2",
-  "description": "FAST Dashboard — ICM SaaS Administration Panel",
+  "description": "Synergistic — ICM SaaS Administration Panel",
   "scripts": {
     "start": "ng serve --port 4200",
     "build": "ng build",
@@ -20,8 +20,10 @@
     "@angular/platform-browser": "^19.0.0",
     "@angular/platform-browser-dynamic": "^19.0.0",
     "@angular/router": "^19.0.0",
-    "primeng": "^19.0.0",
+    "@primeng/themes": "^21.0.4",
+    "@primeuix/themes": "^3.0.0",
     "primeicons": "^7.0.0",
+    "primeng": "^19.0.0",
     "rxjs": "^7.8.0",
     "tslib": "^2.6.0",
     "zone.js": "~0.15.0"

@@ -14,7 +14,7 @@
 The system architecture specifies a full Clean Architecture stack with MediatR, Dapper, FluentValidation, and CQRS. However, v0.1.2 has zero business logic — the only backend requirement is a single health check endpoint (FR-007). Introducing MediatR, CQRS pipelines, and Dapper repositories at this stage would add scaffolding with no immediate value and create busywork for future refactoring when real features arrive.
 
 **Decision**:
-Use a **graduated complexity** approach. The v0.1.2 backend will follow Clean Architecture's layering (Api → Application → Domain → Infrastructure) but will omit MediatR, Dapper, FluentValidation, and CQRS. The health check endpoint will be a single Minimal API route in `Api/Endpoints/Health/`. The `Application` and `Domain` layers will be created as empty placeholder projects with their correct dependency structure, ready for real features in future versions. The `Infrastructure` layer will be created as a placeholder — it has no implementations yet (no database access in v0.1.2).
+Use a **graduated complexity** approach. The v0.1.2 backend will follow Clean Architecture's layering (Api → Application → Domain → Infrastructure) but will omit MediatR, Dapper, FluentValidation, and CQRS. The health check endpoint will be a single Controller action in `Api/Controllers/HealthController.cs`. The `Application` and `Domain` layers will be created as empty placeholder projects with their correct dependency structure, ready for real features in future versions. The `Infrastructure` layer will be created as a placeholder — it has no implementations yet (no database access in v0.1.2).
 
 **Alternatives Considered**:
 1. **Full Clean Architecture with MediatR from day one** — Rejected: premature abstraction. A health check endpoint does not benefit from MediatR pipelines, validation behaviors, or repository patterns. Adding them now creates ceremony without value.
@@ -24,7 +24,7 @@ Use a **graduated complexity** approach. The v0.1.2 backend will follow Clean Ar
 **Consequences**:
 - **Easier**: Reduced boilerplate for v0.1.2. Developers can see the health endpoint immediately without tracing through MediatR pipelines.
 - **Harder**: When FR-007 evolves (e.g., a database-connected health check in a future version), the team will need to introduce MediatR and Dapper at that point — but that is the right time to do it.
-- **Follow-up**: v0.2.0 or the first feature that accesses the database must introduce MediatR, Dapper, and FluentValidation as per the system architecture.
+- **Follow-up**: v0.2.0 or the first feature that accesses the database must introduce MediatR, Dapper, and FluentValidation as per the system architecture. At that time, controllers will delegate to MediatR commands/queries rather than returning responses directly.
 - **Risk**: Low. The layer structure is in place; only the MediatR/Dapper wiring is deferred.
 
 **Principles Applied**:
@@ -36,29 +36,65 @@ Use a **graduated complexity** approach. The v0.1.2 backend will follow Clean Ar
 
 ## ADR-002: Minimal API Endpoints over Controller-Based APIs
 
-**Status**: Accepted
+**Status**: Superseded by [ADR-009](#adr-009-aspnet-core-controllers-over-minimal-api-endpoints)
 **Date**: 2026-07-18
+**Superseded Date**: 2026-07-19
 **Context**:
-The requirements doc references a "Health Check controller" (requirements.md), but the system architecture (`docs/system-architecture.md`, Section 4.5) explicitly specifies Minimal API endpoint groups as the pattern for the .NET 10 backend. FR-004 of the requirements gap analysis flagged this contradiction.
+The requirements doc references a "Health Check controller" (requirements.md), but the system architecture (`docs/system-architecture.md`, Section 4.5) explicitly specified Minimal API endpoint groups as the pattern for the .NET 10 backend. ADR-002 chose Minimal APIs to align with the system architecture as it existed at the time.
 
 **Decision**:
-Follow the system architecture: use **Minimal API endpoint groups**. The health check will be defined as a route group in `Api/Endpoints/Health/HealthEndpoints.cs` using `MapGet`. The source requirements' use of the word "controller" is treated as a colloquialism, not a technical mandate.
+Follow the system architecture: use **Minimal API endpoint groups**. The health check will be defined as a route group in `Api/Endpoints/Health/HealthEndpoints.cs` using `MapGet`.
 
 **Alternatives Considered**:
-1. **Controller-based API** — Rejected: contradicts the established system architecture. The system architecture is the authority for cross-cutting technical decisions. Switching back to controllers for one features creates inconsistency.
-2. **Hybrid approach** — Rejected: mixing controllers and Minimal APIs in the same project is confusing and violates consistency.
+1. **Controller-based API** — Rejected: contradicted the then-current system architecture.
+2. **Hybrid approach** — Rejected: mixing controllers and Minimal APIs in the same project creates inconsistency.
 
 **Consequences**:
-- **Easier**: Consistency with the rest of the codebase. Lower ceremony for simple endpoints. Fewer files per endpoint.
-- **Harder**: Developers used to `[ApiController]` conventions must learn the Minimal API pattern. The learning curve is shallow — one `MapGet` line for the health endpoint.
-- **Risk**: Low. The system architecture already adopts Minimal APIs organization-wide.
+- **Easier**: Consistency with the then-current codebase. Lower ceremony for simple endpoints.
+- **Harder**: Developers used to `[ApiController]` conventions must learn the Minimal API pattern.
+- **Risk**: Low. The system architecture adopted Minimal APIs organization-wide.
 
 **Principles Applied**:
 - **Separation of Concerns** — Endpoint mapping is separated from business logic by layer
 - **Consistency** — Follow the established system-level patterns
-- **Simple over Complex** — Minimal APIs are the simpler choice for this feature
+- **Simple over Complex** — Minimal APIs are the simpler choice for simple endpoints
 
 ---
+
+## ADR-009: ASP.NET Core Controllers over Minimal API Endpoints
+
+**Status**: Accepted
+**Date**: 2026-07-19
+**Supersedes**: [ADR-002](#adr-002-minimal-api-endpoints-over-controller-based-apis)
+**Context**:
+The system architecture (`docs/system-architecture.md`, Section 4.1) has been updated. The "API Framework" row in the technology stack now specifies **ASP.NET Core Controllers** instead of Minimal APIs. Section 4.2 now shows a `Controllers/` folder in the solution structure. Section 4.5 provides an explicit Controller pattern example with `[ApiController]`, `[Route]`, and `ControllerBase`. Section 4.3 describes the Api layer as mapping controllers rather than mapping endpoint groups.
+
+ADR-002 previously chose Minimal API endpoint groups to align with the earlier version of the system architecture. With the system architecture now mandating controllers, ADR-002's decision is no longer consistent with the authoritative source.
+
+The v0.1.2 `HealthEndpoints.cs` currently uses the Minimal API pattern (`MapGroup`/`MapGet`), which must be migrated to a Controller.
+
+**Decision**:
+Adopt **ASP.NET Core Controllers** as the API pattern for all endpoints, aligning with the updated system architecture. The health check endpoint will be migrated from `Api/Endpoints/Health/HealthEndpoints.cs` (Minimal API) to `Api/Controllers/HealthController.cs` (Controller).
+
+The existing `HealthCheckResponse` record in `Application/Features/Health/HealthCheckResponse.cs` remains unchanged — controllers are a transport concern; the response model lives in the Application layer.
+
+`Program.cs` will call `builder.Services.AddControllers()` and `app.MapControllers()` instead of manually calling `app.MapHealthEndpoints()`.
+
+**Alternatives Considered**:
+1. **Keep Minimal APIs despite system architecture change** — Rejected: the system architecture is the authority for cross-cutting technical decisions. Feature-level ADRs must not contradict the system architecture.
+2. **Hybrid approach (controllers + remaining Minimal API)** — Rejected: mixing patterns creates inconsistency and confusion. A single controller for the health endpoint followed by Minimal APIs for future features would force developers to guess which pattern to use.
+3. **Defer migration to v0.2.0** — Rejected: the cost of migration is minimal (one endpoint, two files changed). Delaying creates drift between documentation and code.
+
+**Consequences**:
+- **Easier**: Developers familiar with `[ApiController]`, `[Route]`, `ControllerBase`, and `[HttpGet]` attributes can immediately contribute. The Controller pattern is the most widely understood ASP.NET Core pattern. Model binding, validation, and authorization attributes work as expected with no learning curve. The system architecture's example code (Section 4.5) now directly matches the actual codebase.
+- **Harder**: Slightly more ceremony per endpoint (a class inheriting `ControllerBase` vs. a static method). The `Controllers/` folder replaces the `Endpoints/` folder. Migration of the existing health endpoint requires updating `HealthEndpoints.cs` → `HealthController.cs` and `Program.cs`.
+- **Follow-up**: Stage 03 (Implementation) must update `HealthEndpoints.cs` to `HealthController.cs`, change `Program.cs` from `MapHealthEndpoints()` to `AddControllers()`/`MapControllers()`, and delete the now-empty `Endpoints/` folder. The `Application/Features/Health/HealthCheckResponse.cs` record requires no changes.
+- **Risk**: Low. Migration affects one endpoint in a project with no business logic. No database changes, no frontend changes, no test changes (HTTP contract is identical).
+
+**Principles Applied**:
+- **Consistency** — The feature-level architecture must align with the system-level architecture. The system architecture is the highest authority for technology choices.
+- **Convention over Configuration** — Controllers follow well-established ASP.NET Core conventions (`[ApiController]`, `[Route("api/[controller]")]`) that every .NET developer knows.
+- **Separation of Concerns** — Controllers handle HTTP concerns (model binding, status codes, content negotiation); the Application layer handles business logic. This separation is more explicit with controllers than with Minimal APIs where logic can easily bleed into the endpoint mapping.
 
 ## ADR-003: Standalone Components with PrimeNG for UI Shell
 
@@ -158,7 +194,7 @@ The first migration (`001_CreateSchemaVersion.sql`) will:
 1. Create the `dbo.SchemaVersion` table if it does not exist
 2. Insert a row marking migration `001` as applied
 
-The startup script (`run.ps1`) will run DbUp to apply any pending migrations before launching the API.
+The Docker Compose setup (`docker-compose.yml`) will run DbUp in the API container's entrypoint to apply any pending migrations before the API starts serving requests.
 
 **Alternatives Considered**:
 1. **Docker-based SQL Server** — Rejected: adds Docker as a prerequisite. NFR-005 asks for a lightweight local setup. LocalDB is simpler.
@@ -269,9 +305,11 @@ The collection will be structured with folders for future extension but will con
 | ADR | Topic | Status |
 |-----|-------|--------|
 | ADR-001 | No MediatR/Dapper/CQRS yet — graduated complexity | Accepted |
-| ADR-002 | Minimal API endpoints over controllers | Accepted |
+| ADR-002 | Minimal API endpoints over controllers | Superseded by ADR-009 |
 | ADR-003 | Standalone components + PrimeNG | Accepted |
 | ADR-004 | SQL Server LocalDB + DbUp migrations | Accepted |
 | ADR-005 | No multi-tenancy in v0.1.2 | Accepted |
 | ADR-006 | Console logging only — no observability infra | Accepted |
 | ADR-007 | Postman collection for API verification | Accepted |
+| ADR-008 | Separate template and style files per component | Accepted |
+| ADR-009 | ASP.NET Core Controllers over Minimal API endpoints | Accepted |

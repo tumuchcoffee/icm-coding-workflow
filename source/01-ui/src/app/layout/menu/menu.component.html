@@ -1,5 +1,5 @@
 <p-sidebar
-  [(visible)]="isOpen"
+  [visible]="isOpen()"
   position="left"
   styleClass="app-sidebar"
   (onHide)="closed.emit()">

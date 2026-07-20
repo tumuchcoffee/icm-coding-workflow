@@ -17,7 +17,7 @@ graph TD
     end
 
     subgraph "API Layer"
-        B[".NET 10 Web API<br/>localhost:5001<br/>(v0.1.2: Health Endpoint)"]
+        B[".NET 10 Web API<br/>localhost:5001<br/>(v0.1.2: HealthController)"]
     end
 
     subgraph "Data Layer"
@@ -29,7 +29,7 @@ graph TD
     end
 
     subgraph "Startup"
-        PS["run.ps1<br/>(v0.1.2: Orchestration Script)"]
+        PS["Docker Compose<br/>(v0.1.2: 3-Container Orchestraion)"]
     end
 
     subgraph "Identity & Security — Deferred"
@@ -61,9 +61,9 @@ graph TD
 
     A -->|"GET /api/health (HTTP)"| B
     B -->|"DbUp Migrations (startup)"| E
-    PS -->|"Phase 1: Apply migrations"| E
-    PS -->|"Phase 2: dotnet run"| B
-    PS -->|"Phase 3: npm start"| A
+    PS -->|"Start DB container"| E
+    PS -->|"Start API container"| B
+    PS -->|"Start UI container"| A
     PM -->|"GET /api/health (HTTP)"| B
 ```
 
@@ -125,7 +125,7 @@ Shows the Clean Architecture layer structure and which layers contain v0.1.2 cod
 graph TD
     subgraph ".NET Solution — Synergistic.sln"
         subgraph "Api Layer"
-            API["Api/Program.cs<br/>Api/Endpoints/Health/<br/>HealthEndpoints.cs"]
+            API["Api/Program.cs<br/>Api/Controllers/<br/>HealthController.cs"]
         end
 
         subgraph "Application Layer"
@@ -172,11 +172,12 @@ graph LR
         C2["Postman<br/>Collection"]
     end
 
-    subgraph ".NET API — Minimal API Pipeline"
+    subgraph ".NET API — Controller Pipeline"
         direction TB
-        E1["MapGet('/api/health')"]
+        E1["HealthController<br/>[ApiController]"]
         E2["HealthCheckResponse<br/>record (Application layer)"]
         E3["JSON Serialization<br/>(System.Text.Json)"]
+    end
     end
 
     subgraph "Response"
@@ -192,30 +193,30 @@ graph LR
     R1 --> C2
 ```
 
-**Note**: In v0.1.2, the health check has zero dependencies — no database, no cache, no authentication, no MediatR pipeline. It is the simplest possible endpoint.
+**Note**: In v0.1.2, the health check has zero dependencies — no database, no cache, no authentication, no MediatR pipeline. It is the simplest possible controller action.
 
 ---
 
-## 5. Startup Orchestration — run.ps1 Flow
+## 5. Startup Orchestration — Docker Compose Flow
 
-Shows the three-phase startup that brings the full stack online.
+Shows how `docker compose up` brings the full stack online via three containers.
 
 ```mermaid
 graph TD
-    START["Developer: ./run.ps1"] --> CHECK["Check Prerequisites<br/>dotnet, node, sqllocaldb"]
+    START["Developer: docker compose up"] --> CHECK["Check Prerequisites<br/>Docker Engine running"]
 
-    CHECK -->|"all present"| PHASE1
-    CHECK -->|"missing"| FAIL["❌ Report missing<br/>dependency + install link"]
+    CHECK -->|"Docker available"| PHASE1
+    CHECK -->|"not running"| FAIL["❌ Report Docker<br/>not running + install link"]
 
-    PHASE1["Phase 1: Database<br/>DbUp → LocalDB"] --> PHASE1_OK{"Success?"}
+    PHASE1["Container 1: SQL Server<br/>mcr.microsoft.com/mssql/server"] --> PHASE1_OK{"Healthy?"}
     PHASE1_OK -->|"yes"| PHASE2
-    PHASE1_OK -->|"no"| FAIL_MIG["❌ Migration error<br/>Show script + message<br/>DB rolled back"]
+    PHASE1_OK -->|"no"| FAIL_MIG["❌ DB container failed<br/>Check logs + restart policy"]
 
-    PHASE2["Phase 2: API<br/>dotnet run (background)<br/>→ localhost:5001"] --> PHASE2_OK{"Success?"}
+    PHASE2["Container 2: .NET API<br/>DbUp migrations on entrypoint<br/>→ localhost:5001"] --> PHASE2_OK{"Healthy?"}
     PHASE2_OK -->|"yes"| PHASE3
-    PHASE2_OK -->|"no"| FAIL_API["❌ API start error<br/>Show port/exception"]
+    PHASE2_OK -->|"no"| FAIL_API["❌ API container failed<br/>Check logs + restart policy"]
 
-    PHASE3["Phase 3: Angular<br/>npm start (foreground)<br/>→ localhost:4200"] --> SUCCESS["✅ Full stack running!<br/>Angular: :4200<br/>API: :5001<br/>DB: Synergistic"]
+    PHASE3["Container 3: Angular<br/>Dev server (ng serve)<br/>→ localhost:4200"] --> SUCCESS["✅ Full stack running!<br/>Angular: :4200<br/>API: :5001<br/>DB: SQL Server"]
 
     style START fill:#e8eaf6,stroke:#3949ab
     style SUCCESS fill:#c8e6c9,stroke:#2e7d32
@@ -235,11 +236,11 @@ graph TD
 | `MenuComponent` | PrimeNG `p-sidebar` | npm package |
 | `FooterComponent` | None | Pure HTML/CSS |
 | `DetailPaneComponent` | None | Pure HTML/CSS with `@if` |
-| `HealthEndpoints.cs` | `HealthCheckResponse` (Application) | .NET project reference |
+| `HealthController.cs` | `HealthCheckResponse` (Application) | .NET project reference |
 | `Program.cs` | `Application`, `Infrastructure` | .NET project reference (DI) |
 | `HealthCheckResponse` | None (plain record) | No dependencies |
 | `001_CreateSchemaVersion.sql` | None | Standalone SQL script |
-| `run.ps1` | `dotnet`, `node`, `sqllocaldb` | System PATH |
+| `docker-compose.yml` | Docker Engine | System PATH |
 | Postman Collection | .NET API (`localhost:5001`) | HTTP |
 
 ---

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "ICM Admin API v0.1.2",
-    "description": "Postman collection for verifying the FAST Dashboard .NET API health check and future endpoints.",
+    "description": "Postman collection for verifying the Synergistic .NET API health check and future endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": {
       "major": 0,

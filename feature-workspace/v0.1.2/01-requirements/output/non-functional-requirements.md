@@ -50,7 +50,7 @@
 ## NFR-005: Local-Only Deployment (v0.1.2)
 **Category**: Deployment / Scalability  
 **Threshold**: The entire stack (Angular, .NET API, SQL Server) runs on a single developer machine with no Azure or cloud dependencies  
-**Measurement**: Developer can run all three tiers after `git clone` + `run.ps1`  
+**Measurement**: Developer can run all three tiers after `git clone` + `docker compose up`  
 **Priority**: Must Have  
 **Status**: ✅ Explicit — "Create the project for the angular code... Create a SQL Server database... on a local development machine"  
 **Sources:** requirements.md (Angular, .NET API, Database sections)

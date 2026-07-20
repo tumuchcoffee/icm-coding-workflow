@@ -105,7 +105,7 @@ export class HeaderComponent {
     <p-button icon="pi pi-bars"
               styleClass="p-button-text p-button-rounded"
               (onClick)="menuToggle.emit()" />
-    <h1 class="header-title">FAST Dashboard</h1>
+    <h1 class="header-title">Synergistic</h1>
   </div>
   <a routerLink="/" class="header-profile">
     <p-avatar icon="pi pi-user" styleClass="cursor-pointer" />
@@ -169,7 +169,7 @@ export class MenuComponent {
 
 | Attribute | Detail |
 |---|---|
-| **Responsibility** | Renders the sticky application footer with centered "FAST Dashboard" branding text. |
+| **Responsibility** | Renders the sticky application footer with centered "Synergistic" branding text. |
 | **Files** | `src/app/layout/footer/footer.component.ts`<br/>`src/app/layout/footer/footer.component.html`<br/>`src/app/layout/footer/footer.component.scss` |
 | **Selector** | `<app-footer>` |
 | **Dependencies** | None (pure HTML/CSS) |
@@ -193,7 +193,7 @@ export class FooterComponent {}
 **Template** (from `footer.component.html`):
 ```html
 <footer class="app-footer">
-  <h3 class="footer-text">FAST Dashboard</h3>
+  <h3 class="footer-text">Synergistic</h3>
 </footer>
 ```
 
@@ -243,41 +243,41 @@ export class DetailPaneComponent {
 
 ## 2. .NET Backend Components
 
-### 2.1 HealthCheckEndpoints
+### 2.1 HealthController
 
 | Attribute | Detail |
 |---|---|
-| **Responsibility** | Maps the `GET /api/health` endpoint. Returns API status, current UTC timestamp, and version string. No database call, no authentication, no dependencies. |
-| **File** | `src/Api/Endpoints/Health/HealthEndpoints.cs` |
-| **Dependencies** | None. This is a self-contained endpoint with zero external calls. |
-| **Interface** | **HTTP GET** `/api/health` → **Response 200**: `{ "status": "Healthy", "timestamp": "2026-07-18T...", "version": "0.1.2" }` |
+| **Responsibility** | Handles the `GET /api/health` HTTP request. Returns API status, current UTC timestamp, and version string. No database call, no authentication, no dependencies. |
+| **File** | `src/Api/Controllers/HealthController.cs` |
+| **Dependencies** | None. This is a self-contained controller with zero external calls. |
+| **Interface** | **HTTP GET** `/api/health` → **Response 200**: `{ "status": "Healthy", "timestamp": "2026-07-19T...", "version": "0.1.2" }` |
 | **Error Handling** | The endpoint cannot fail under normal conditions (no I/O). If the application is unreachable, the HTTP client handles the connection error. |
 | **Tenant Awareness** | None in v0.1.2 (ADR-005). No `X-Tenant-Id` header required. |
 | **Traceability** | FR-007 |
-| **Principle** | **Single Responsibility** — the endpoint does exactly one thing: report liveness. **Separation of Concerns** — the endpoint mapping is in Api; the response model is in Application. |
+| **Principle** | **Single Responsibility** — the controller does exactly one thing: report liveness. **Separation of Concerns** — the controller lives in Api; the response model lives in Application. **Convention over Configuration** — follows ASP.NET Core Controller conventions (`[ApiController]`, `[Route]`, `ControllerBase`). |
 
 **Code Design**:
 ```csharp
-// Api/Endpoints/Health/HealthEndpoints.cs
-public static class HealthEndpoints
-{
-    public static void MapHealthEndpoints(this IEndpointRouteBuilder routes)
-    {
-        var group = routes.MapGroup("/api/health")
-            .WithTags("Health");
+// Api/Controllers/HealthController.cs
+using Microsoft.AspNetCore.Mvc;
+using Synergistic.Application.Features.Health;
 
-        group.MapGet("/", () =>
-        {
-            var response = new HealthCheckResponse(
-                Status: "Healthy",
-                Timestamp: DateTimeOffset.UtcNow.ToString("o"),
-                Version: "0.1.2"
-            );
-            return Results.Ok(response);
-        })
-        .Produces<HealthCheckResponse>(StatusCodes.Status200OK)
-        .WithName("GetHealth")
-        .WithDescription("Returns the API health status, timestamp, and version.");
+namespace Synergistic.Api.Controllers;
+
+[ApiController]
+[Route("api/health")]
+public class HealthController : ControllerBase
+{
+    [HttpGet]
+    [ProducesResponseType(typeof(HealthCheckResponse), StatusCodes.Status200OK)]
+    public IActionResult GetHealth()
+    {
+        var response = new HealthCheckResponse(
+            Status: "Healthy",
+            Timestamp: DateTimeOffset.UtcNow.ToString("o"),
+            Version: "0.1.2"
+        );
+        return Ok(response);
     }
 }
 ```
@@ -299,14 +299,14 @@ public sealed record HealthCheckResponse(
 
 | Attribute | Detail |
 |---|---|
-| **Responsibility** | Bootstraps the ASP.NET Core application: registers services, configures middleware pipeline, maps endpoints. |
+| **Responsibility** | Bootstraps the ASP.NET Core application: registers services (including controllers), configures middleware pipeline, maps controller routes. |
 | **File** | `src/Api/Program.cs` |
 | **Dependencies** | `Application`, `Infrastructure` (project references for DI registration) |
 | **Interface** | N/A — application entry point |
 | **Error Handling** | Startup exceptions (missing config, port conflicts) bubble up and terminate the process. The developer sees the error on the console. No global exception handler needed in v0.1.2 (no business logic to throw). |
 | **Tenant Awareness** | None in v0.1.2. No tenant resolution middleware. |
 | **Traceability** | FR-001, FR-007 |
-| **Principle** | **Separation of Concerns** — Program.cs wires infrastructure; it does not contain business logic. |
+| **Principle** | **Separation of Concerns** — Program.cs wires infrastructure; it does not contain business logic. **Convention over Configuration** — `AddControllers()` / `MapControllers()` follows standard ASP.NET Core conventions per system architecture §4.5. |
 
 **Code Design**:
 ```csharp
@@ -318,10 +318,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.MapHealthEndpoints();
+app.MapControllers();
 app.Run();
 ```
 
@@ -389,26 +390,25 @@ app.Run();
 
 ---
 
-## 4. Startup Script
+## 4. Docker Compose Setup
 
-### 4.1 run.ps1
+### 4.1 docker-compose.yml
 
 | Attribute | Detail |
 |---|---|
-| **Responsibility** | Single-command startup of the entire local development stack: apply database migrations, start .NET API, start Angular dev server. |
-| **File** | `run.ps1` (repository root) |
-| **Dependencies** | Node.js, .NET 10 SDK, SQL Server LocalDB |
-| **Interface** | No arguments required. Runs three processes, outputs URLs to console. |
-| **Error Handling** | Checks prerequisites before starting. Reports missing dependencies with installation links. Does not silently fail. |
-| **Tenant Awareness** | N/A — infrastructure script |
+| **Responsibility** | Single-command startup of the entire local development stack via three containers: SQL Server, .NET API, and Angular dev server. |
+| **File** | `docker-compose.yml` (repository root) |
+| **Dependencies** | Docker Engine only |
+| **Interface** | `docker compose up` starts all three containers. `docker compose down` stops and removes them. |
+| **Error Handling** | Container health checks ensure dependencies are ready before dependent services start. Restart policies handle transient failures. |
+| **Tenant Awareness** | N/A — infrastructure configuration |
 | **Traceability** | FR-001 |
-| **Principle** | **Simple over Complex** — one script, three tiers, zero configuration. |
+| **Principle** | **Simple over Complex** — one command, three containers, zero local tooling prerequisites beyond Docker. |
 
-**Script Flow**:
-1. Verify prerequisites: `dotnet --version`, `node --version`, `sqllocaldb info`
-2. Apply database migrations: `dotnet run --project src/Api -- --migrate` (or direct DbUp invocation)
-3. Start .NET API: `dotnet run --project src/Api` (background process on `http://localhost:5001`)
-4. Start Angular dev server: `npm start --prefix src/01-ui` (foreground on `http://localhost:4200`)
+**Container Flow**:
+1. `db` — SQL Server 2022 container starts first, port 1433 exposed
+2. `api` — .NET 10 API container (depends on `db`), runs DbUp migrations on entrypoint before starting Kestrel on `http://localhost:5001`
+3. `ui` — Angular dev server container (depends on `api`), starts on `http://localhost:4200`
 
 ---
 
@@ -447,7 +447,7 @@ pm.test("Response has required fields", () => {
 
 ```
 icm-admin/
-├── run.ps1                                    # Startup script
+├── docker-compose.yml                          # Docker Compose configuration
 ├── Synergistic.sln                               # .NET solution file
 ├── src/
 │   ├── 01-ui/                                 # Angular SPA
@@ -479,9 +479,8 @@ icm-admin/
 │   │   ├── package.json
 │   │   ├── angular.json
 │   ├── Api/
-│   │   ├── Endpoints/
-│   │   │   └── Health/
-│   │   │       └── HealthEndpoints.cs
+│   │   ├── Controllers/
+│   │   │   └── HealthController.cs
 │   │   ├── appsettings.json
 │   │   ├── appsettings.Development.json
 │   │   └── Program.cs
@@ -519,7 +518,7 @@ icm-admin/
 | `AppShellComponent` | `DetailPaneComponent` | Binds `isOpen` state | `@Input()` binding |
 | `HeaderComponent` | Angular Router | User icon navigates to `/` | `routerLink` |
 | `Angular (browser)` | .NET API | `GET /api/health` | HTTP (dev: `http://localhost:5001`) |
-| `run.ps1` | SQL Server LocalDB | Apply migrations | DbUp |
-| `run.ps1` | .NET API | Start process | `dotnet run` |
-| `run.ps1` | Angular | Start dev server | `npm start` |
+| `docker-compose.yml` | SQL Server Container | Start DB container | Docker |
+| `docker-compose.yml` | .NET API Container | Start API container (runs DbUp on entrypoint) | Docker |
+| `docker-compose.yml` | Angular Container | Start dev server | Docker |
 | Postman | .NET API | `GET /api/health` | HTTP (dev: `http://localhost:5001`) |

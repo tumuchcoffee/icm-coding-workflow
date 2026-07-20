@@ -1,0 +1,121 @@
+# ============================================
+# ICM Coding Workflow — .gitignore
+# ============================================
+
+# -------------------------------------------
+# Node.js / Angular (source/01-ui/)
+# -------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular build output
+dist/
+.angular/
+
+# TypeScript incremental build
+*.tsbuildinfo
+out-tsc/
+
+# Dependency lockfile (optional — keep if you want reproducible builds)
+# package-lock.json
+
+# -------------------------------------------
+# .NET / Visual Studio (source/02-backend/)
+# -------------------------------------------
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio
+.vs/
+*.sln.ide/
+
+# NuGet
+packages/
+*.nupkg
+.nuget/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# -------------------------------------------
+# Environment & Secrets
+# -------------------------------------------
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+*.pfx
+*.pem
+*.key
+secrets.json
+
+# Azure
+*.pubxml
+*.pubxml.user
+azuredeploy.parameters.json
+
+# -------------------------------------------
+# SQL Server
+# -------------------------------------------
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.trn
+
+# -------------------------------------------
+# OS-generated files
+# -------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -------------------------------------------
+# Editor / IDE
+# -------------------------------------------
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+.idea/
+
+# -------------------------------------------
+# Testing & Coverage
+# -------------------------------------------
+coverage/
+*.lcov
+test-results/
+.nyc_output/
+*.coverage
+
+# -------------------------------------------
+# Logs & Temp
+# -------------------------------------------
+*.log
+logs/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# -------------------------------------------
+# Docker
+# -------------------------------------------
+docker-compose.override.yml

@@ -112,7 +112,7 @@ Every migration script MUST:
 
 ### 4.3 Migration Execution
 
-DbUp runs on application startup (triggered by `run.ps1` or a `--migrate` CLI flag). DbUp queries `dbo.SchemaVersion` to determine which scripts have already been applied, then runs only pending scripts in sequence number order within a transaction per script.
+DbUp runs on API container startup (triggered by `docker compose up`). DbUp queries `dbo.SchemaVersion` to determine which scripts have already been applied, then runs only pending scripts in sequence number order within a transaction per script.
 
 ```
 ┌──────────────────────────────────────────────────────┐

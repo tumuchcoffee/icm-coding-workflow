@@ -148,7 +148,7 @@ src/
 | Concern | Technology |
 |---|---|
 | Runtime | .NET 10 (LTS) |
-| API Framework | ASP.NET Core Minimal APIs |
+| API Framework | ASP.NET Core Controllers |
 | ORM | Dapper |
 | Validation | FluentValidation |
 | Background Jobs | Azure Functions (isolated process) |
@@ -162,8 +162,8 @@ src/
 
 ```
 src/
-├── Api/                          # ASP.NET Core host, middleware, endpoints
-│   ├── Endpoints/                # Minimal API endpoint groups (by feature)
+├── Api/                          # ASP.NET Core host, middleware, controllers
+│   ├── Controllers/              # API controllers (by feature)
 │   ├── Middleware/
 │   └── Program.cs
 ├── Application/                  # Use cases, commands, queries, DTOs
@@ -189,7 +189,7 @@ src/
 └── Contracts/                    # Shared DTOs for inter-service communication
 ```
 
-### 4.3 Clean Architecture with Minimal APIs
+### 4.3 Clean Architecture with Controllers
 
 The backend follows **Clean Architecture** (onion/hexagonal). Dependencies point inward:
 
@@ -204,7 +204,7 @@ graph LR
 - **Domain** — Zero external dependencies. Pure entities, value objects, and domain events.
 - **Application** — Use cases orchestrated via MediatR. Depends only on Domain.
 - **Infrastructure** — Dapper `SqlConnection` wrappers, Azure Service Bus clients, blob storage, email services. Implements interfaces defined in Application.
-- **Api** — Thin shell. Maps endpoints, wires middleware, registers services.
+- **Api** — Thin shell. Maps controllers, wires middleware, registers services.
 
 ### 4.4 Request Pipeline (Typical Flow)
 
@@ -238,31 +238,37 @@ sequenceDiagram
     API-->>Client: JSON Response
 ```
 
-### 4.5 Minimal API Endpoint Pattern
+### 4.5 Controller Pattern
 
 ```csharp
-// Example: Api/Endpoints/Tenants/TenantEndpoints.cs
-public static class TenantEndpoints
+// Example: Api/Controllers/TenantsController.cs
+[ApiController]
+[Route("api/tenants")]
+[Authorize]
+public class TenantsController : ControllerBase
 {
-    public static void MapTenantEndpoints(this IEndpointRouteBuilder routes)
+    private readonly IMediator _mediator;
+
+    public TenantsController(IMediator mediator)
     {
-        var group = routes.MapGroup("/api/tenants")
-            .RequireAuthorization()
-            .WithTags("Tenants");
+        _mediator = mediator;
+    }
 
-        group.MapGet("/", async (IMediator mediator, CancellationToken ct) =>
-            Results.Ok(await mediator.Send(new GetTenantsQuery(), ct)))
-            .Produces<IReadOnlyList<TenantDto>>()
-            .WithName("GetTenants");
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<TenantDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTenants(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetTenantsQuery(), ct);
+        return Ok(result);
+    }
 
-        group.MapGet("/{id:guid}", async (Guid id, IMediator mediator, CancellationToken ct) =>
-        {
-            var result = await mediator.Send(new GetTenantByIdQuery(id), ct);
-            return result is null ? Results.NotFound() : Results.Ok(result);
-        })
-        .Produces<TenantDto>()
-        .Produces(StatusCodes.Status404NotFound)
-        .WithName("GetTenantById");
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(TenantDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTenantById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetTenantByIdQuery(id), ct);
+        return result is null ? NotFound() : Ok(result);
     }
 }
 ```
@@ -488,7 +494,7 @@ Partition Key: /TenantId
         "TenantId": "abc-123",
         "UserId": "user-456",
         "CorrelationId": "corr-789",
-        "SourceContext": "Api.Endpoints.Tenants",
+        "SourceContext": "Api.Controllers.Tenants",
         "MachineName": "icm-prd-api-01",
         "DurationMs": 3421
     }
@@ -595,12 +601,365 @@ Managed via Cosmos DB's built-in `ttl` property. Set per-level by writing to sep
 
 ---
 
-## 12. Document Governance
+## 12. Local Development with Docker
+
+### 12.1 Overview
+
+All local development and testing runs through Docker Compose, providing a consistent, isolated environment that mirrors production without requiring local installation of .NET, Node.js, or SQL Server. The compose stack includes **hot reload** on both the frontend and backend, and **SQL data persists across container restarts** via a named Docker volume — no data loss on `docker compose down` or `docker compose stop` / `start`.
+
+```mermaid
+graph TD
+    subgraph "Docker Host (localhost)"
+        UI[icm-ui<br/>Angular Dev Server<br/>:4200]
+        API[icm-api<br/>.NET 10 Web API<br/>:5001]
+        SQL[(icm-db<br/>SQL Server 2022<br/>:1433)]
+    end
+
+    subgraph "External Tools"
+        Browser[Browser<br/>localhost:4200]
+        SSMS[SSMS / Azure Data Studio<br/>localhost:1433]
+    end
+
+    Browser -->|HTTP| UI
+    UI -->|/api proxy| API
+    API -->|SQL| SQL
+    SSMS -->|SQL Auth| SQL
+```
+
+### 12.2 Prerequisites
+
+| Tool | Version | Purpose |
+|---|---|---|
+| Docker Desktop | Latest stable | Container runtime & Compose |
+| A SQL client | SSMS, Azure Data Studio, or `sqlcmd` | Inspect persistent data |
+
+No local installation of .NET SDK, Node.js, or SQL Server is required.
+
+### 12.3 File Layout
+
+All Docker assets live at the repository root:
+
+```
+source/
+├── .dockerignore              # Shared exclude rules for all Dockerfiles
+├── docker-compose.yml          # Full local stack definition
+├── docker/
+│   ├── api/
+│   │   └── Dockerfile          # Multi-stage .NET 10 build
+│   ├── ui/
+│   │   └── Dockerfile          # Multi-stage Angular 19 dev build
+│   └── db/
+│       └── entrypoint.sh       # SQL Server startup + migration runner
+└── ...
+```
+
+### 12.4 SQL Server Container & Data Persistence
+
+The SQL Server container uses a **named Docker volume** (`sql-data`) mounted at `/var/opt/mssql/data`. This volume survives:
+
+- `docker compose stop` / `docker compose start` (container restart)
+- `docker compose down` (container removal)
+- Docker Desktop restarts and system reboots
+
+The volume is only destroyed by an explicit `docker compose down -v`, which removes all named volumes. Normal development workflows never trigger this.
+
+##### Connecting from SSMS / Azure Data Studio
+
+| Property | Value |
+|---|---|
+| Server name | `localhost,1433` |
+| Authentication | SQL Server Authentication |
+| Login | `sa` |
+| Password | Set via `.env` (see below) — default: `DevPassword123!` |
+| Encrypt connection | Optional (set to `False` for local dev) |
+
+All databases and tables are visible, queryable, and editable through SSMS just like a local SQL Server instance.
+
+### 12.5 `docker-compose.yml`
+
+```yaml
+# docker-compose.yml — local development stack
+# Start:  docker compose up -d
+# Stop:   docker compose stop      (preserves volumes & data)
+# Down:   docker compose down      (removes containers, preserves volumes)
+# Nuke:   docker compose down -v   (removes containers AND volumes — data lost)
+
+name: icm-dev
+
+services:
+  # ── SQL Server 2022 ────────────────────────────────────────────
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: icm-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:-DevPassword123!}
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql/data                  # Persistent database files
+      - ./source/03-sql/migrations:/migrations:ro     # Read-only migration scripts
+      - ./docker/db/entrypoint.sh:/entrypoint.sh:ro   # Startup script
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── .NET 10 Web API (hot reload) ────────────────────────────────
+  api:
+    build:
+      context: ./source/02-backend
+      dockerfile: ../../docker/api/Dockerfile
+      target: dev
+    container_name: icm-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__Default=Server=db,1433;Database=icm-dev;User Id=sa;Password=${SA_PASSWORD:-DevPassword123!};TrustServerCertificate=True;
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./source/02-backend/src:/app/src:consistent   # Hot reload watches source
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Angular SPA (dev server with hot reload) ───────────────────
+  ui:
+    build:
+      context: ./source/01-ui
+      dockerfile: ../../docker/ui/Dockerfile
+      target: dev
+    container_name: icm-ui
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./source/01-ui/src:/app/src:consistent   # Hot reload watches source
+      - ui-node-modules:/app/node_modules        # Anonymous volume for deps
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  sql-data:          # Named volume — persists across stop/down/reboot
+  ui-node-modules:   # Prevents host/container node_modules conflicts
+```
+
+### 12.6 API `Dockerfile` (Multi-Stage, Hot Reload)
+
+```dockerfile
+# docker/api/Dockerfile
+# Target "dev" for local development with hot reload (docker compose watch / volume mount).
+# Target "prod" for the publishable image (used by CI/CD — see Section 8).
+
+# ── .NET 10 SDK base ──────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS sdk
+WORKDIR /app
+
+# ── Development (hot reload) ──────────────────────────────────
+FROM sdk AS dev
+# dotnet watch polls for file changes signaled by the volume mount.
+ENTRYPOINT ["dotnet", "watch", "run", "--project", "src/Api/Api.csproj", "--no-hot-reload-profile"]
+# NOTE: If watch fails to detect changes, try `docker compose restart api`.
+
+# ── Production publish ────────────────────────────────────────
+FROM sdk AS build
+COPY . .
+RUN dotnet restore Synergistic.sln
+RUN dotnet publish src/Api/Api.csproj -c Release -o /publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS prod
+WORKDIR /app
+COPY --from=build /publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Api.dll"]
+```
+
+### 12.7 UI `Dockerfile` (Multi-Stage, Hot Reload)
+
+```dockerfile
+# docker/ui/Dockerfile
+# Target "dev" for local development with Angular dev server and HMR.
+# Target "prod" for the static-build image served by nginx.
+
+# ── Node base ─────────────────────────────────────────────────
+FROM node:22-alpine AS node
+WORKDIR /app
+
+# ── Development (hot reload) ──────────────────────────────────
+FROM node AS dev
+COPY package*.json ./
+RUN npm ci
+COPY . .
+# ng serve with host 0.0.0.0 so the container port is reachable from the host.
+# Polling enabled for cross-OS volume mount compatibility (Windows host → Linux container).
+CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--port", "4200", "--poll", "2000"]
+# NOTE: --poll ensures file-change detection works reliably with host volumes.
+
+# ── Production build ──────────────────────────────────────────
+FROM node AS build
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine AS prod
+COPY --from=build /app/dist/icm-admin/browser /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### 12.8 `.dockerignore`
+
+```dockerignore
+# .dockerignore — reduce build context sent to Docker daemon
+
+# Dependencies
+**/node_modules/
+**/bin/
+**/obj/
+
+# Build outputs
+**/dist/
+**/out/
+
+# IDE & OS
+**/.vs/
+**/.vscode/
+**/.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment
+.env
+*.env.local
+
+# Documentation & feature workspace
+docs/
+feature-workspace/
+
+# Logs & temp
+*.log
+*.tmp
+```
+
+### 12.9 `.env` (Secrets & Config)
+
+```ini
+# .env — local Docker Compose configuration
+# ⚠ NEVER commit this file. It is excluded by .dockerignore.
+
+SA_PASSWORD=DevPassword123!
+```
+
+Create `.env.example` for the team:
+
+```ini
+# .env.example — committed template. Copy to .env and set your own password.
+SA_PASSWORD=ChangeMe123!
+```
+
+### 12.10 Database Migration Runner
+
+The `entrypoint.sh` script runs after SQL Server is healthy, applying all `.sql` migration scripts in order:
+
+```bash
+#!/bin/bash
+# docker/db/entrypoint.sh
+# Runs after SQL Server starts. Applies migration scripts from /migrations in
+# alphabetical order, tracking each one in dbo.SchemaVersion (created by 001_).
+
+set -e
+
+echo "Waiting for SQL Server to be ready..."
+for i in $(seq 1 30); do
+  if /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" &>/dev/null; then
+    echo "SQL Server is ready."
+    break
+  fi
+  echo "  ...waiting ($i/30)"
+  sleep 2
+done
+
+echo "Running migrations..."
+for f in /migrations/*.sql; do
+  script_name=$(basename "$f")
+  echo "  Applying: $script_name"
+  /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -d master -i "$f"
+done
+
+echo "All migrations applied."
+```
+
+### 12.11 Daily Workflow
+
+```powershell
+# First time (or after cloning)
+docker compose up -d           # Build images, create volumes, start all services
+                               # SQL migrations run automatically on first start
+
+# Day-to-day development
+docker compose start            # Resume stopped containers — all data intact
+
+# After pulling new migrations or dependency changes
+docker compose up -d --build    # Rebuild images and restart
+
+# Stop for the day
+docker compose stop             # Containers stop, volumes/data preserved
+
+# Full teardown (keep data)
+docker compose down             # Removes containers & networks; VOLUMES SURVIVE
+
+# Complete reset (WARNING: deletes ALL data)
+docker compose down -v          # Removes containers, networks, AND volumes
+```
+
+### 12.12 Verifying the Stack
+
+| Service | URL / Connection | What to Check |
+|---|---|---|
+| Angular SPA | http://localhost:4200 | App loads, no console errors |
+| .NET API | http://localhost:5001/api/health | Returns 200 OK |
+| SQL Server (SSMS) | `localhost,1433` — `sa` / password from `.env` | `icm-dev` database exists, `dbo.SchemaVersion` table populated |
+
+##### Health check endpoint
+
+The `HealthController` is already wired at `GET /api/health` and returns a simple status response. Verify with:
+
+```powershell
+Invoke-RestMethod http://localhost:5001/api/health
+```
+
+### 12.13 Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `docker compose up` fails with port conflict | Port 1433, 4200, or 5001 already in use | Stop local SQL Server / IIS / another Angular dev server, or change the host port in `docker-compose.yml` |
+| Angular HMR doesn't detect file changes | Inotify not working across host→container volume on Windows | The `--poll 2000` flag is already set in the Dockerfile. If still broken, increase to `--poll 1000` |
+| SQL migrations don't run | SQL Server wasn't healthy when entrypoint ran | `docker compose restart db` — the healthcheck will pass and entrypoint will re-run |
+| "Login failed for user 'sa'" in SSMS | Password mismatch or SQL not ready | Check `.env` for `SA_PASSWORD`. Wait for `icm-db` container to show `healthy` in `docker compose ps` |
+| API can't reach SQL | Container not on same network or DNS resolution failed | Ensure `depends_on: db (healthy)` is in the compose file. Use `db` (the service name) as hostname |
+
+---
+
+## 13. Document Governance
 
 | Attribute | Detail |
 |---|---|
 | Owner | Platform Architecture Team |
 | Version | 1.0 |
-| Last Updated | 2026-07-17 |
+| Last Updated | 2026-07-19 |
 | Review Cadence | Quarterly (or after major architectural decision) |
 | Classification | Internal — Engineering |

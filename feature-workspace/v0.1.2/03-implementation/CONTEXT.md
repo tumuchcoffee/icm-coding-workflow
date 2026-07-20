@@ -42,7 +42,7 @@ Determine the dependency-ordered build sequence. The order should be:
 1. **Domain layer** — entities, value objects, domain events, and exceptions (zero dependencies).
 2. **Application layer** — commands, queries, handlers, validators, DTOs, and interfaces (depends on Domain).
 3. **Infrastructure layer** — repository implementations, external service clients, messaging consumers (depends on Application interfaces).
-4. **API layer** — endpoint definitions, middleware, DI registration (depends on Application and Infrastructure).
+4. **API layer** — controller definitions, middleware, DI registration (depends on Application and Infrastructure).
 5. **Database** — SQL migration scripts, stored procedures, indexes (can be written in parallel with layers 1–4).
 6. **Frontend** — Angular components, services, stores, and templates (depends on API contracts).
 7. **Tests** — unit tests for each layer, integration tests for critical flows (written alongside each layer, not after).
@@ -55,13 +55,13 @@ For each layer, follow this cycle:
 
 1. **Read the architecture spec** for the component you're about to build.
 2. **Write the code** following the coding standards exactly. Cite the standard you're applying in code comments where the rationale isn't obvious.
-3. **Write the tests** for that component before moving on. Every handler, validator, endpoint, and component must have corresponding tests.
+3. **Write the tests** for that component before moving on. Every handler, validator, service, and controller action must have corresponding tests.
 4. **Validate** that the code:
    - Respects Clean Architecture layer boundaries (dependencies point inward).
    - Handles errors explicitly — no "happy path only" code.
    - Is tenant-aware (includes `TenantId` in multi-tenant paths).
    - Produces structured logs with `CorrelationId`, `TenantId`, and `UserId`.
-   - Is idempotent where required (SQL scripts, PUT/DELETE endpoints).
+   - Is idempotent where required (SQL scripts, PUT/DELETE controller actions).
 
 #### Layer-Specific Guidance
 
@@ -88,11 +88,12 @@ For each layer, follow this cycle:
 
 ##### API Layer
 
-- Use Minimal API endpoint groups organized by feature (`MapGroup("/api/...")`).
-- Every endpoint must include `RequireAuthorization()` unless explicitly public.
+- Use ASP.NET Core Controllers inheriting from `ControllerBase` with `[ApiController]` and `[Route]` attributes.
+- Every controller action must include `[Authorize]` unless explicitly public.
 - Return Problem Details (RFC 7807) for all error responses.
-- Endpoints are a thin shell — map HTTP to MediatR commands/queries and return results.
+- Controllers are a thin shell — map HTTP to MediatR commands/queries and return results.
 - Include `x-api-version` header support or URL path versioning.
+- Organize controllers by feature (`Controllers/HealthController.cs`, `Controllers/TenantsController.cs`).
 
 ##### Database (SQL)
 
@@ -116,7 +117,7 @@ For each layer, follow this cycle:
 
 ##### Tests
 
-- **Unit tests**: xUnit + NSubstitute for .NET; Jest for Angular. Every handler, validator, service, and pipe must have unit tests.
+- **Unit tests**: xUnit + NSubstitute for .NET; Jest for Angular. Every handler, validator, service, and controller action must have unit tests.
 - **Integration tests**: Testcontainers for database integration; `WebApplicationFactory` for API integration tests.
 - **E2E tests**: Playwright for critical user journeys.
 - Test naming convention: `MethodName_Scenario_ExpectedBehavior`.
@@ -244,7 +245,7 @@ Before marking this stage complete, verify:
 - [ ] Secrets are never in code or config files
 - [ ] Observability: structured logs include `CorrelationId`, `TenantId`, and `UserId`; metrics exist for key operations
 - [ ] Coding standards from `../../docs/coding-standards.md` are followed for every language used
-- [ ] Tests exist for every handler, validator, service, endpoint, and Angular component
+- [ ] Tests exist for every handler, validator, service, controller action, and Angular component
 - [ ] All tests pass and are independent (no shared state, no ordering assumptions)
 - [ ] The implementation results file (`output/implementation-results.md`) is complete and self-contained — a reviewer can understand everything without opening individual source files
 - [ ] The results file includes clear smoke test steps for Stage 04
