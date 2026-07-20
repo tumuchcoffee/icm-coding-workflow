@@ -8,7 +8,6 @@ Translate the requirements from [Stage 01](../01-requirements/output/) into a co
 
 ## Inputs
 
-
 | Layer                         | Source                                                              | What to Load                                                          |
 | ----------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | **Layer 3 (Reference)** | `docs/coding-standards.md`                                        | Language and platform conventions                                     |
@@ -17,7 +16,6 @@ Translate the requirements from [Stage 01](../01-requirements/output/) into a co
 | **Layer 4 (Working)**   | `../01-requirements/output/non-functional-requirements.md`        | Quantified NFR thresholds and priorities                              |
 | **Layer 4 (Working)**   | `../01-requirements/output/backlog-and-prioritization.md`         | MoSCoW-prioritized backlog and traceability matrix                    |
 | **Layer 4 (Working)**   | `../01-requirements/output/glossary.md`                           | Domain terminology                                                    |
-
 
 ---
 

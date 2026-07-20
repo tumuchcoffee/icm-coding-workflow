@@ -1,0 +1,16 @@
+.app-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  background-color: var(--surface-card, #ffffff);
+  border-top: 1px solid var(--surface-border, #dee2e6);
+}
+
+.footer-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color-secondary, #6c757d);
+}

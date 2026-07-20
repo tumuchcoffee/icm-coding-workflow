@@ -14,16 +14,19 @@
 
 1. **Scan the references folder.** List every file in `.\references\` (recursively). Accept any format — markdown, plain text, JSON, YAML, CSV, images (describe what you see), and PDFs or Office documents if readable. Note the filename, type, and a one-line summary of what each file appears to contain.
 2. **Extract all requirements signals.** For every source file, pull out:
+
    - Explicit functional requirements — restate each one as a user story using the template: **"As a [role], I want [action], so that [outcome]."** Then derive GIVEN/WHEN/THEN acceptance criteria. Even if the source uses prose, translate it into this format.
    - Explicit non-functional requirements (performance, security, compliance, availability, scalability, usability thresholds — anything with a number or a measurable target). Flag any NFR that is stated without a number as "needs quantification."
    - Implicit signals: stakeholder names/roles mentioned, system integrations referenced, pain points described, constraints stated (budget, timeline, technology, regulatory).
    - Contradictions or gaps between sources — flag them prominently; do not silently resolve them.
 3. **Merge and de-duplicate.** Combine findings into a unified set:
+
    - Group related requirements by functional area or user journey. Use a consistent structure (e.g., "Functional Requirements" → sub-grouped by feature area; "Non-Functional Requirements" → sub-grouped by NFR category).
    - Merge duplicate or near-duplicate statements into a single, clearest version. Note in a `<!-- comment -->` when you consolidated.
    - Preserve the source trail: after each requirement or group, add a `**Sources:** file-a.md, file-b.md` attribution so traceability is maintained back to the original references.
 4. **Apply the tier-appropriate rigor.** Use the classification matrix in Section 1 to determine the tier for this feature, then apply the principle-selection grid from Section 2 to decide how thoroughly to structure the draft. At minimum, always apply Clarity & Unambiguity and Separation of Concerns (functional vs. NFR).
 5. **Write the requirements artifacts.** Save the following files to `.\output\` using these skeletons:
+
    - **`output/feature-requirements.md`** — Functional requirements expressed as **user stories** in Gherkin-style GIVEN/WHEN/THEN format, each with acceptance criteria. Group by feature area or user journey. Every story must be atomic, unambiguous, and testable. Include a summary of the user personas relevant to this feature.
 
      ```markdown
@@ -82,7 +85,6 @@
      ```
 
 6. **Stop and report.** After writing the files, summarize: tier chosen, number of user stories produced, NFRs quantified, glossary terms defined, any gaps or contradictions flagged, and any files that could not be read. Do not proceed to architecture — the output files are the sole deliverable for this phase.
-
 
 ---
 

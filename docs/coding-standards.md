@@ -20,6 +20,7 @@ Prefer the standards and conventions found in the recommendations that are provi
 - Follow the [Angular Style Guide](https://angular.dev/style-guide) and [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html) conventions.
 - Use strong typing — avoid `any` unless absolutely necessary; prefer `unknown` for truly unknown types.
 - Use standalone components, signals, and the new control flow syntax (`@if`, `@for`) for Angular 17+ projects.
+- Use separate `.component.html` and `.component.scss` files for every component. Avoid inline `template` and `styles` in the TypeScript file — this keeps logic, structure, and presentation independently readable.
 - Keep components small, focused, and named with the `.component.ts` suffix; limit template logic.
 - Use `async` pipe for observable subscriptions in templates to avoid manual subscription management.
 - Prefer `interface` over `type` for object shapes; use `type` for unions, intersections, and mapped types.
