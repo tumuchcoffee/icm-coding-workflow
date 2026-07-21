@@ -25,7 +25,11 @@ public class HealthController : ControllerBase
         var response = new HealthCheckResponse(
             Status: "Healthy",
             Timestamp: DateTimeOffset.UtcNow.ToString("o"),
+<<<<<<< HEAD
             Version: "0.1.2"
+=======
+            Version: "0.1.3"
+>>>>>>> dev-to-main
         );
         return Ok(response);
     }

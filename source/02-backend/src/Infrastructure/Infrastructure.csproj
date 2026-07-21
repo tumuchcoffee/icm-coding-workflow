@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+=======
+    <PackageReference Include="dbup-sqlserver" Version="6.0.16" />
+>>>>>>> dev-to-main
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0-preview.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.*" />
     <ProjectReference Include="..\Application\Application.csproj" />

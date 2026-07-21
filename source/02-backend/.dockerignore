@@ -1,0 +1,48 @@
+# source/02-backend/.dockerignore
+# Exclude files that are not needed in the Docker build context.
+# This speeds up builds and reduces image size.
+
+# Build output
+**/bin/
+**/obj/
+
+# IDE
+.idea/
+.vs/
+.vscode/
+*.sln
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Test projects (not needed for production build)
+**/*.Tests/
+**/*Test*/
+
+# Documentation
+README.md
+docs/
+
+# NuGet
+**/*.nupkg
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

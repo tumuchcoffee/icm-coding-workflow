@@ -20,7 +20,10 @@
     "@angular/platform-browser": "^19.0.0",
     "@angular/platform-browser-dynamic": "^19.0.0",
     "@angular/router": "^19.0.0",
+<<<<<<< HEAD
     "@primeng/themes": "^21.0.4",
+=======
+>>>>>>> dev-to-main
     "@primeuix/themes": "^3.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^19.0.0",
