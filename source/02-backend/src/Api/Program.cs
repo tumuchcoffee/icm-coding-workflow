@@ -1,9 +1,6 @@
 using Synergistic.Application;
 using Synergistic.Infrastructure;
-<<<<<<< HEAD
-=======
 using Synergistic.Infrastructure.Persistence.Sql;
->>>>>>> dev-to-main
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,18 +8,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Register Application and Infrastructure layer services.
-<<<<<<< HEAD
-// ADR-001: These are currently placeholders with no active registrations.
-=======
 // ADR-001: Application and Infrastructure DI registrations are placeholders.
->>>>>>> dev-to-main
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-<<<<<<< HEAD
-=======
 // ── DbUp Migration Mode ────────────────────────────────────
 // ADR-013: DbUp migration execution at API container entrypoint.
 // When invoked with --migrate-only, run migrations and exit.
@@ -56,7 +47,6 @@ if (args.Contains("--migrate-only"))
     return; // Exit after migrations — do not start the web server
 }
 
->>>>>>> dev-to-main
 // Map controller routes — ASP.NET Core Controller pattern (ADR-009).
 app.MapControllers();
 
