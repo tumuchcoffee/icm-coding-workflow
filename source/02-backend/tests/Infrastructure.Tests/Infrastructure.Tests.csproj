@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Synergistic.Infrastructure.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.*" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.*" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.*" />
+    <PackageReference Include="NSubstitute" Version="5.3.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Infrastructure\Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

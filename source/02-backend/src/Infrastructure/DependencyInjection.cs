@@ -5,8 +5,8 @@ namespace Synergistic.Infrastructure;
 
 /// <summary>
 /// Registers Infrastructure-layer services in the DI container.
-/// ADR-001: Currently a placeholder — no Dapper, no external service clients.
-/// ADR-004: When DbUp is integrated, the migration runner will be wired here.
+/// ADR-001: Currently a placeholder for Dapper/data access registrations.
+/// ADR-004: DbUp is invoked via CLI flag (--migrate-only), not through DI.
 /// </summary>
 public static class DependencyInjection
 {

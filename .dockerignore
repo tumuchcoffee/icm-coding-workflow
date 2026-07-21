@@ -1,0 +1,49 @@
+# Root-level .dockerignore
+# Applied when build context is the repository root.
+# Supplements per-project .dockerignore files.
+
+# Node
+**/node_modules/
+**/dist/
+**/.angular/
+
+# .NET
+**/bin/
+**/obj/
+**/*.nupkg
+
+# IDE
+**/.vs/
+**/.idea/
+**/.vscode/
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+**/Dockerfile
+**/.dockerignore
+docker-compose*.yml
+
+# Logs
+**/*.log
+
+# Docs (not needed in images)
+docs/
+**/*.md
+
+# Test outputs
+**/TestResults/
+**/coverage/
+
+# Feature workspace (documentation only)
+feature-workspace/
+
+# Postman collections
+source/04-testing/
